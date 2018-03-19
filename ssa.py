@@ -21,6 +21,7 @@ from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import datetime
 import matplotlib.dates as mdates
 import seaborn as sns
+import gc
 
 from sklearn import cross_validation
 
@@ -77,6 +78,38 @@ def initialize_data():
                  ],axis=1,inplace=True)
 
     return(ssa_df)
+
+
+def organize_data(dataframe):
+    # construct a dataframe of SSI application types
+    ssi_ssa_df = pd.DataFrame(dataframe[['RegionCode','StateCode','Year','Month','SSIInitialReceipts','SSIInitialAllowanceRate']])
+    ssi_ssa_df['Type'] = 'SSI'
+    ssi_ssa_df = ssi_ssa_df.rename(index=str, columns={"SSIInitialReceipts": "InitialReceipts", "SSIInitialAllowanceRate": "InitialAllowanceRate"})
+    # construct a dataframe of SSDI application types
+    ssdi_ssa_df = pd.DataFrame(dataframe[['RegionCode','StateCode','Year','Month','SSDIInitialReceipts','SSDIInitialAllowanceRate']])
+    ssdi_ssa_df['Type'] = 'SSDI'
+    ssdi_ssa_df = ssdi_ssa_df.rename(index=str, columns={"SSDIInitialReceipts": "InitialReceipts", "SSDIInitialAllowanceRate": "InitialAllowanceRate"})
+
+    # construct a dataframe of SSIDC application types
+    ssidc_ssa_df = pd.DataFrame(dataframe[['RegionCode','StateCode','Year','Month','SSIDisabledChildInitialReceipts','SSIDisabledChildInitialAllowanceRate']])
+    ssidc_ssa_df['Type'] = 'SSIDC'
+    ssidc_ssa_df = ssidc_ssa_df.rename(index=str, columns={"SSIDisabledChildInitialReceipts": "InitialReceipts", "SSIDisabledChildInitialAllowanceRate": "InitialAllowanceRate"})
+
+    # construct a dataframe of CONC application types
+    conc_ssa_df = pd.DataFrame(dataframe[['RegionCode','StateCode','Year','Month','ConcInitialReceipts','ConcInitialAllowanceRate']])
+    conc_ssa_df['Type'] = 'Conc'
+    conc_ssa_df = conc_ssa_df.rename(index=str, columns={"ConcInitialReceipts": "InitialReceipts", "ConcInitialAllowanceRate": "InitialAllowanceRate"})
+
+    
+    # append these dataframes together into one
+    ssi_ssa_df = ssi_ssa_df.append(ssdi_ssa_df)
+    ssi_ssa_df = ssi_ssa_df.append(ssidc_ssa_df)
+    ssi_ssa_df = ssi_ssa_df.append(conc_ssa_df)
+    
+    # clean up 
+    gc.collect()
+    
+    return(ssi_ssa_df)
 
 
 #x1 = ssa_df.query('RegionCode == "ATL" and StateCode == "AL"')['FullDate']
@@ -266,6 +299,8 @@ def plot_types(dataframe, region, state):
 print("Loading data")
 ssa_df = initialize_data()
 
+org_ssa_df = organize_data(ssa_df)
+
 print("\n\n")
 print("plot allowance rate for all regions")
 plot_regions(ssa_df, ['ATL', 'BOS', 'CHI', 'DAL', 'KCM', 'NYC', 'PHL', 'SEA', 'SFO'])
@@ -304,7 +339,7 @@ plt.show()
 print("\n\n")
 print("remove outliers to smooth out the distribution")
 #cc_df_filtered = ssa_df[(np.abs(stats.zscore(ssa_df['AllInitialAllowanceRate'])) <=0.08)]
-ssa_df_filtered = pd.DataFrame(ssa_df[(np.abs(stats.zscore(ssa_df['AllInitialAllowanceRate'])) <=1.5)])
+ssa_df_filtered = pd.DataFrame(ssa_df[(np.abs(stats.zscore(ssa_df['AllInitialAllowanceRate'])) <=1.8)])
 
 
 
@@ -349,29 +384,46 @@ plot_types(ssa_df_filtered, 'PHL', 'VA')
 
 
 
+# org_ssa_df
+# remove outliers in the re-organized dataset
+ssa_df_filtered = pd.DataFrame(org_ssa_df[(np.abs(stats.zscore(org_ssa_df['InitialAllowanceRate'])) <=1.8)])
+
+
+
 
 # construct df of binned targets
 conditions = [
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 0) & (ssa_df_filtered['AllInitialAllowanceRate'] < 28),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 28) & (ssa_df_filtered['AllInitialAllowanceRate'] < 30),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 30) & (ssa_df_filtered['AllInitialAllowanceRate'] < 32),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 32) & (ssa_df_filtered['AllInitialAllowanceRate'] < 34),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 34) & (ssa_df_filtered['AllInitialAllowanceRate'] < 36),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 36) & (ssa_df_filtered['AllInitialAllowanceRate'] < 38),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 38) & (ssa_df_filtered['AllInitialAllowanceRate'] < 40),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 40) & (ssa_df_filtered['AllInitialAllowanceRate'] < 42),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 42) & (ssa_df_filtered['AllInitialAllowanceRate'] < 44),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 44) & (ssa_df_filtered['AllInitialAllowanceRate'] < 46),
-    (ssa_df_filtered['AllInitialAllowanceRate'] >= 46)]
+    (ssa_df_filtered['InitialAllowanceRate'] >= 0) & (ssa_df_filtered['InitialAllowanceRate'] < 28),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 28) & (ssa_df_filtered['InitialAllowanceRate'] < 30),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 30) & (ssa_df_filtered['InitialAllowanceRate'] < 32),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 32) & (ssa_df_filtered['InitialAllowanceRate'] < 34),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 34) & (ssa_df_filtered['InitialAllowanceRate'] < 36),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 36) & (ssa_df_filtered['InitialAllowanceRate'] < 38),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 38) & (ssa_df_filtered['InitialAllowanceRate'] < 40),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 40) & (ssa_df_filtered['InitialAllowanceRate'] < 42),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 42) & (ssa_df_filtered['InitialAllowanceRate'] < 44),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 44) & (ssa_df_filtered['InitialAllowanceRate'] < 46),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 46)]
 choices=[0,1,2,3,4,5,6,7,8,9,10]
 
-ssa_df_filtered['AllInitialAllowanceRate_bin'] = np.select(conditions, choices, default=10)
-ssa_allowance_rate_df = ssa_df_filtered[['AllInitialAllowanceRate_bin']]
+ssa_df_filtered['InitialAllowanceRate_bin'] = np.select(conditions, choices, default=10)
+ssa_allowance_rate_df = ssa_df_filtered[['InitialAllowanceRate_bin']]
+
+
+# bin the InitialReceipts data into workload levels (Low, Medium, High)
+conditions = [
+    (ssa_df_filtered['InitialReceipts'] >= 0) & (ssa_df_filtered['InitialReceipts'] < 5000),
+    (ssa_df_filtered['InitialReceipts'] >= 5000) & (ssa_df_filtered['InitialReceipts'] < 10000),
+    (ssa_df_filtered['InitialReceipts'] >= 10000)]
+choices=['Low','Medium','High']
+
+ssa_df_filtered['Workload'] = np.select(conditions, choices, default='High')
 
 
 
-x_df = ssa_df_filtered[['RegionCode','StateCode','Year','AllInitialReceipts']]
-y_df = ssa_df_filtered[['AllInitialAllowanceRate_bin']]
+
+x_df = ssa_df_filtered[['RegionCode','StateCode','Month','Workload','Type']]
+y_df = ssa_df_filtered[['InitialAllowanceRate_bin']]
 
 #from sklearn.preprocessing import OneHotEncoder
 x_df = pd.get_dummies(x_df)
@@ -380,7 +432,7 @@ x_df = pd.get_dummies(x_df)
 
 #####
 # split data into test/train
-x_train, x_test, y_train, y_test = cross_validation.train_test_split(x_df, ssa_df_filtered['AllInitialAllowanceRate_bin'], test_size=0.3, random_state=0)
+x_train, x_test, y_train, y_test = cross_validation.train_test_split(x_df, y_df, test_size=0.3, random_state=0)
 x_train.shape, y_train.shape
 x_test.shape, y_test.shape
 
