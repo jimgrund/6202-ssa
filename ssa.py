@@ -10,27 +10,23 @@ import os
 ### Provide the path here
 os.chdir('/Users/jimgrund/Documents/GWU/machine learning/midterm_project/') 
 
-### Basic Packages
-import pandas as pd
-import numpy as np
+
 
 from matplotlib import pyplot as plt
+from sklearn import cross_validation
 import scipy.stats as stats
-
-from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
-import datetime
 import matplotlib.dates as mdates
 import seaborn as sns
 import gc
+import pandas as pd
+import numpy as np
 
-from sklearn import cross_validation
 
 
-## DataLoad and Global Filtering
 
-### read in the SSA data
-#ssa_df  = pd.read_csv('SSA-SA-MOWL.csv', index_col=False, names=['Filename', 'z', 'FileDate', 'RegionCode', 'StateCode', 'FileLocation', 'FullDate', 'FormattedDate', 'AllInitialReceipts', 'AllInitialClosingPending', 'AllInitialDeterminations', 'AllInitialAllowances', 'AllInitialAllowanceRate', 'SSDIReceipts', 'SSDIClosingPending', 'SSDIDeterminations', 'SSDIAllowances', 'SSDIAllowanceRate', 'SSIReceipts', 'SSIClosingPending', 'SSIDeterminations', 'SSIAllowances', 'SSIAllowanceRate', 'ConcReceipts', 'ConcClosingPending', 'ConcDeterminations', 'ConcAllowances', 'ConcAllowanceRate', 'SSIDisabledChildReceipts', 'SSIDisabledChildClosingPending', 'SSIDisabledChildDeterminations', 'SSIDisabledChildAllowances', 'SSIDisabledChildAllowanceRate', 'PrototypeState', 'AllReconsReceipts', 'AllReconsClosingPending', 'AllReconsDeterminations', 'AllReconsAllowances', 'AllReconsAllowanceRate', 'SSDIReconsReceipts', 'SSDIReconsClosingPending', 'SSDIReconsDeterminations', 'SSDIReconsAllowances', 'SSDIReconsAllowanceRate', 'SSIReconsReceipts', 'SSIReconsClosingPending', 'SSIReconsDeterminations', 'SSIReconsAllowances', 'SSIReconsAllowanceRate', 'ConcReconsReceipts', 'ConcReconsClosingPending', 'ConcReconsDeterminations', 'ConcReconsAllowances', 'ConcReconsAllowanceRate', 'SSIDisabledChildReconsReceipts', 'SSIDisabledChildReconsClosingPending', 'SSIDisabledChildReconsDeterminations', 'SSIDisabledChildReconsAllowances', 'SSIDisabledChildReconsAllowanceRate', 'AllCDRReceipts', 'AllCDRClosingPending', 'AllCDRDeterminations', 'AllCDRAllowances', 'AllCDRAllowanceRate', 'SSDICDRReceipts', 'SSDICDRClosingPending', 'SSDICDRDeterminations', 'SSDICDRAllowances', 'SSDICDRAllowanceRate', 'SSICDRReceipts', 'SSICDRClosingPending', 'SSICDRDeterminations', 'SSICDRAllowances', 'SSICDRAllowanceRate', 'ConcCDRReceipts', 'ConcCDRClosingPending', 'ConcCDRDeterminations', 'ConcCDRAllowances', 'ConcCDRAllowanceRate','a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'])
-
+### Load the SSA data into a pandas dataframe from CSV
+# convert date columns to actual date type
+# drop all columns we don't care about for this specific analysis
 def initialize_data():
     ssa_df  = pd.read_csv('SSA-SA-MOWL.csv',header=None, index_col=False, names=['FileName','z', 'FileDate', 'RegionCode', 'StateCode', 'y', 'FullDate', 'FormattedDate',
                                                                 'AllInitialReceipts', 'AllInitialPendingClosure', 'AllInitialDeterminations', 'AllInitialAllowances', 'AllInitialAllowanceRate',
@@ -80,6 +76,9 @@ def initialize_data():
     return(ssa_df)
 
 
+
+# construct a new dataframe where the attributes we care about are now feature columns
+# rather than every benefit type having it's own column, we will have a benefit type column 
 def organize_data(dataframe):
     # construct a dataframe of SSI application types
     ssi_ssa_df = pd.DataFrame(dataframe[['RegionCode','StateCode','Year','Month','SSIInitialReceipts','SSIInitialAllowanceRate']])
@@ -112,14 +111,9 @@ def organize_data(dataframe):
     return(ssi_ssa_df)
 
 
-#x1 = ssa_df.query('RegionCode == "ATL" and StateCode == "AL"')['FullDate']
-#y1 = ssa_df.query('RegionCode == "ATL" and StateCode == "AL"')['AllInitialReceipts']
-
-#x1 = ssa_df.query('RegionCode == "ATL"').groupby(['FullDate'], as_index=False)['FullDate']
 
 
-
-
+# plot a 3x3 grid of AllowanceRate data for all the regions
 def plot_regions(dataframe, regions):
     
     ####################################################
@@ -148,15 +142,11 @@ def plot_regions(dataframe, regions):
             yrow +=1
         plotnum +=1
         
-        # Plot
-        #fig = plt.figure()
         fig.add_subplot(330+plotnum)
     
         # Plot actual data
         plt.plot_date(x=x1, y=y1, fmt='o-')
-    
-        # Now append the extra data
-        #x1.append(date_end)
+
         x2 = mdates.date2num(x1)
     
         z=np.polyfit(x2,y1,1)
@@ -175,14 +165,12 @@ def plot_regions(dataframe, regions):
         xrow +=1
     
     
-    
-    
-    #fig.autofmt_xdate() # This tidies up the x axis
     fig = plt.gcf()
     plt.show()
 
 
 
+# plot a 3x3 grid of AllowanceRate data for all the States within a region
 def plot_region(dataframe, region, states):
         
     ####################################################
@@ -204,15 +192,11 @@ def plot_region(dataframe, region, states):
         x1 = df['FullDate']
         y1 = df['AllInitialAllowanceRate']
         
-        # Plot
-        #fig = plt.figure()
         fig.add_subplot(330+plotnum)
     
         # Plot actual data
         plt.plot_date(x=x1, y=y1, fmt='o-')
     
-        # Now append the extra data
-        #x1.append(date_end)
         x2 = mdates.date2num(x1)
     
         z=np.polyfit(x2,y1,1)
@@ -230,14 +214,15 @@ def plot_region(dataframe, region, states):
         
         plotnum +=1
     
-    
-    
-    #fig.autofmt_xdate() # This tidies up the x axis
+  
     fig = plt.gcf()
     plt.show()
 
 
 
+
+
+# plot a grid of the three different benefit types for a specific state
 def plot_types(dataframe, region, state):
 
     ####################################################
@@ -261,16 +246,12 @@ def plot_types(dataframe, region, state):
         df = ssa_df.query(dfquery).groupby(['FullDate'], as_index=False)[parameter].mean()
         x1 = df['FullDate']
         y1 = df[parameter]
-        
-        # Plot
-        #fig = plt.figure()
+
         fig.add_subplot(330+plotnum)
     
         # Plot actual data
         plt.plot_date(x=x1, y=y1, fmt='o-')
     
-        # Now append the extra data
-        #x1.append(date_end)
         x2 = mdates.date2num(x1)
     
         z=np.polyfit(x2,y1,1)
@@ -289,17 +270,32 @@ def plot_types(dataframe, region, state):
         plotnum +=1
     
     
-    
-    #fig.autofmt_xdate() # This tidies up the x axis
     fig = plt.gcf()
     plt.show()
 
 
 
+
+
+
+
+##################################################################
+# Create a dataframe with the SSA dataset
+
 print("Loading data")
 ssa_df = initialize_data()
 
+
+##################################################################
+# Take the dataframe and reorganize such that the we end up with
+# Date, Region, State, application count, and benefit type as feature columns
+
 org_ssa_df = organize_data(ssa_df)
+
+
+##################################################################
+# Plot graphs to view the rate of application approvals for
+# regions, states within region, and benefit types for state
 
 print("\n\n")
 print("plot allowance rate for all regions")
@@ -316,8 +312,8 @@ plot_types(ssa_df, 'PHL', 'VA')
 
 
 
-
-
+##################################################################
+# plot the distribution of allowance rate to see any outliers that may exist
 
 print("\n\n")
 print("Plot distribution of AllInitialAllowanceRate before removing outliers")
@@ -334,16 +330,19 @@ plt.show()
 
 
 
-
+##################################################################
+# remove any outliers that have a z-score >1.8
 
 print("\n\n")
 print("remove outliers to smooth out the distribution")
-#cc_df_filtered = ssa_df[(np.abs(stats.zscore(ssa_df['AllInitialAllowanceRate'])) <=0.08)]
 ssa_df_filtered = pd.DataFrame(ssa_df[(np.abs(stats.zscore(ssa_df['AllInitialAllowanceRate'])) <=1.8)])
 
 
 
 
+##################################################################
+# now that outliers have been removed,
+# plot the distribution of allowance rate to see what outliers may still exist
 
 print("\n\n")
 print("Plot distribution of AllInitialAllowanceRate after removing outliers")
@@ -362,8 +361,10 @@ plt.show()
 
 
 
-
-
+##################################################################
+# now that outliers have been removed,
+# plot graphs to view the rate of application approvals for
+# regions, states within region, and benefit types for state
 
 print("\n\n")
 print("plot allowance rate for all regions")
@@ -384,98 +385,215 @@ plot_types(ssa_df_filtered, 'PHL', 'VA')
 
 
 
-# org_ssa_df
+
+###############################################################################
+# perform the same outlier removal on the re-organized dataset
 # remove outliers in the re-organized dataset
 ssa_df_filtered = pd.DataFrame(org_ssa_df[(np.abs(stats.zscore(org_ssa_df['InitialAllowanceRate'])) <=1.8)])
 
 
 
-
-# construct df of binned targets
+###############################################################################
+# construct dataframe of binned targets
+# the target values range from ~27 through ~47.  Therefore we want to create bins
+# heavily based on these values.
 conditions = [
-    (ssa_df_filtered['InitialAllowanceRate'] >= 0) & (ssa_df_filtered['InitialAllowanceRate'] < 28),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 28) & (ssa_df_filtered['InitialAllowanceRate'] < 30),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 30) & (ssa_df_filtered['InitialAllowanceRate'] < 32),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 32) & (ssa_df_filtered['InitialAllowanceRate'] < 34),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 34) & (ssa_df_filtered['InitialAllowanceRate'] < 36),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 36) & (ssa_df_filtered['InitialAllowanceRate'] < 38),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 38) & (ssa_df_filtered['InitialAllowanceRate'] < 40),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 40) & (ssa_df_filtered['InitialAllowanceRate'] < 42),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 42) & (ssa_df_filtered['InitialAllowanceRate'] < 44),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 44) & (ssa_df_filtered['InitialAllowanceRate'] < 46),
-    (ssa_df_filtered['InitialAllowanceRate'] >= 46)]
-choices=[0,1,2,3,4,5,6,7,8,9,10]
+    (ssa_df_filtered['InitialAllowanceRate'] >= 0) & (ssa_df_filtered['InitialAllowanceRate'] < 23),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 23) & (ssa_df_filtered['InitialAllowanceRate'] < 26),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 26) & (ssa_df_filtered['InitialAllowanceRate'] < 30),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 30) & (ssa_df_filtered['InitialAllowanceRate'] < 34),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 34) & (ssa_df_filtered['InitialAllowanceRate'] < 37),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 37) & (ssa_df_filtered['InitialAllowanceRate'] < 40),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 40) & (ssa_df_filtered['InitialAllowanceRate'] < 44),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 44) & (ssa_df_filtered['InitialAllowanceRate'] < 48),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 48) & (ssa_df_filtered['InitialAllowanceRate'] < 52),
+    (ssa_df_filtered['InitialAllowanceRate'] >= 52)]
+choices=[20,23,26,30,34,37,40,44,48,52]
 
-ssa_df_filtered['InitialAllowanceRate_bin'] = np.select(conditions, choices, default=10)
+ssa_df_filtered['InitialAllowanceRate_bin'] = np.select(conditions, choices, default=52)
 ssa_allowance_rate_df = ssa_df_filtered[['InitialAllowanceRate_bin']]
 
+# verify fairly equal distribution of these bins with:
+# pd.value_counts(ssa_df_filtered['InitialAllowanceRate_bin'].values, sort=True)
 
+del conditions
+del choices
+
+
+###############################################################################
 # bin the InitialReceipts data into workload levels (Low, Medium, High)
+# we'll use this rather than the precise numerical values
 conditions = [
-    (ssa_df_filtered['InitialReceipts'] >= 0) & (ssa_df_filtered['InitialReceipts'] < 5000),
-    (ssa_df_filtered['InitialReceipts'] >= 5000) & (ssa_df_filtered['InitialReceipts'] < 10000),
-    (ssa_df_filtered['InitialReceipts'] >= 10000)]
+    (ssa_df_filtered['InitialReceipts'] >= 0) & (ssa_df_filtered['InitialReceipts'] < 420),
+    (ssa_df_filtered['InitialReceipts'] >= 420) & (ssa_df_filtered['InitialReceipts'] < 1380),
+    (ssa_df_filtered['InitialReceipts'] >= 1380)]
 choices=['Low','Medium','High']
 
 ssa_df_filtered['Workload'] = np.select(conditions, choices, default='High')
 
+# verify fairly equal distribution of these bins with:
+# pd.value_counts(ssa_df_filtered['Workload'].values, sort=True)
+
+del conditions
+del choices
 
 
 
-x_df = ssa_df_filtered[['RegionCode','StateCode','Month','Workload','Type']]
+###############################################################################
+# bin the months into seasons (spring, summer, autumn, winter)
+# we'll use seasonality rather than the precise month/date
+conditions = [
+        (ssa_df_filtered['Month'] == "01") | (ssa_df_filtered['Month'] == "02") | (ssa_df_filtered['Month'] == "12"),
+        (ssa_df_filtered['Month'] == "03") | (ssa_df_filtered['Month'] == "04") | (ssa_df_filtered['Month'] == "05"),
+        (ssa_df_filtered['Month'] == "06") | (ssa_df_filtered['Month'] == "07") | (ssa_df_filtered['Month'] == "08"),
+        (ssa_df_filtered['Month'] == "09") | (ssa_df_filtered['Month'] == "10") | (ssa_df_filtered['Month'] == "11"),
+        ]
+choices=["Winter", "Spring", "Summer", "Autumn"]
+
+ssa_df_filtered['Season'] = np.select(conditions, choices, default="Winter")
+
+del conditions
+del choices
+
+
+
+###############################################################################
+# specify the fields we plan to use for the x and y
+x_df = ssa_df_filtered[['RegionCode','StateCode','Season','Workload','Type']]
 y_df = ssa_df_filtered[['InitialAllowanceRate_bin']]
 
-#from sklearn.preprocessing import OneHotEncoder
+
+###############################################################################
+# one-hot encode the factors in x_df
 x_df = pd.get_dummies(x_df)
 
 
 
-#####
+###############################################################################
 # split data into test/train
 x_train, x_test, y_train, y_test = cross_validation.train_test_split(x_df, y_df, test_size=0.3, random_state=0)
-x_train.shape, y_train.shape
-x_test.shape, y_test.shape
+#x_train.shape, y_train.shape
+#x_test.shape, y_test.shape
 
 
 
-####
-# Logistic regression
-from sklearn.linear_model import LogisticRegression
-model=LogisticRegression(penalty='l2', max_iter=1000)
-model.fit(x_train,y_train)
-prediction=model.predict(x_test)
+
+###############################################################################
+# Linear Regression
+
+print("\n\n")
+print("Testing with Linear Regression")
+
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Create linear regression object
+regr = linear_model.LinearRegression()
+
+# Train the model using the training sets
+regr.fit(x_train, y_train)
+
+# Make predictions using the testing set
+y_pred = regr.predict(x_test)
+
+
+# The coefficients
+#print('Coefficients: \n', regr.coef_)
+
+# The mean squared error
+print("Mean squared error for Linear Regression: %.2f"
+      % mean_squared_error(y_test, y_pred))
+
+# Explained variance score: 1 is perfect prediction
+print('Linear Regression Variance score: %.2f' % r2_score(y_test, y_pred))
+
+del y_pred
+
+
+###############################################################################
+## SGD regressor
+
+print("\n\n")
+print("Testing with SGDRegressor")
+clf = linear_model.SGDRegressor()
+
+# Train using the training set
+clf.fit(x_train, y_train)
+
+# Make predictions with the test set
+sgd_y_predicted = clf.predict(x_test)
+
+
+# compare predicted to actual y_test values to compute measures of accuracy
+# The mean squared error
+print("Mean squared error for SGD: %.2f"
+      % mean_squared_error(y_test, sgd_y_predicted))
+
+# Explained variance score: 1 is perfect prediction
+print('SGD Variance score: %.2f' % r2_score(y_test, sgd_y_predicted))
+
+del sgd_y_predicted
 
 
 
-#### 
+###############################################################################
 # Try KNN on the data
 from sklearn.neighbors import KNeighborsClassifier
 
+print("\n\n")
+print("Testing with KNN")
 
-### Store results
-train_accuracy = []
-test_accuracy  = []
-### Set KNN setting from 1 to 15
-knn2_range = range(1, 15)
-for neighbors in knn2_range:
-### Start Nearest Neighbors Classifier with K of 1
-  knn2 = KNeighborsClassifier(n_neighbors=neighbors,
-                              metric='minkowski', p=1)
-### Train the data using Nearest Neighbors
-  knn2.fit(x_train, y_train)
-### Capture training accuracy
-  train_accuracy.append(knn2.score(x_train, y_train))
-### Predict using the test dataset  
-  y_pred = knn2.predict(x_test)
-### Capture test accuracy
-  test_accuracy.append(knn2.score(x_test, y_test))
-  
-## Plot Results from KNN Tuning
-plt.plot(knn2_range, train_accuracy, label='training accuracy')
-plt.plot(knn2_range, test_accuracy,  label='test accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Neighbors')
-plt.legend()
-plt.title('KNN Tuning ( # of Neighbors vs Accuracy')
-plt.savefig('KNNTuning.png')
-plt.show()
+
+#### Perform a loop across numerous options for value of K to determine most optimal selection
+#
+#### Store results
+#train_accuracy = []
+#test_accuracy  = []
+#### Set KNN setting from 1 to 15
+#knn_range = range(1, 15)
+#for neighbors in knn_range:
+#### Start Nearest Neighbors Classifier with K of 1
+#  knn = KNeighborsClassifier(n_neighbors=neighbors, metric='minkowski', p=1)
+#  ### Train the data using Nearest Neighbors
+#  knn.fit(x_train, y_train)
+#  ### Capture training accuracy
+#  train_accuracy.append(knn.score(x_train, y_train))
+#  ### Predict using the test dataset  
+#  y_pred = knn.predict(x_test)
+#  ### Capture test accuracy
+#  test_accuracy.append(knn.score(x_test, y_test))
+#  
+### Plot Results from KNN Tuning
+#plt.plot(knn_range, train_accuracy, label='training accuracy')
+#plt.plot(knn_range, test_accuracy,  label='test accuracy')
+#plt.ylabel('Accuracy')
+#plt.xlabel('Neighbors')
+#plt.legend()
+#plt.title('KNN Tuning ( # of Neighbors vs Accuracy')
+#plt.savefig('KNNTuning.png')
+#plt.show()
+#
+#del test_accuracy
+#del train_accuracy
+
+
+## KNN Using Output from KNN-Tuning, K = 9 is most ideal
+knn = KNeighborsClassifier(n_neighbors=9,  metric='minkowski', p=1)
+
+### Re-Train the data using Nearest Neighbors
+knn.fit(x_train, y_train)
+
+### Model Accuracy
+y_pred= knn.predict(x_test)
+print('\nPrediction from x_test:')
+print(y_pred)
+
+score = knn.score(x_test, y_test)
+print('KNN score:', score*100,'%')
+
+
+# The mean squared error
+print("Mean squared error of KNN model: %.2f"
+      % mean_squared_error(y_test, y_pred))
+
+del y_pred
